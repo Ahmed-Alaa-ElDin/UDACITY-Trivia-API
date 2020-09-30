@@ -56,13 +56,16 @@ def create_app(test_config=None):
         cat_result = {}
         for category_query in categories_query:
             cat_result[category_query.id] = category_query.type
-        result = {
-        "questions" : formatted_questions[start_page:end_page],
-        "total_questions" : len(questions_query),
-        "current_category" : "",
-        "categories" : cat_result
-        }
-        return jsonify(result)
+        if len(formatted_questions[start_page:end_page]) != 0:
+            result = {
+            "questions" : formatted_questions[start_page:end_page],
+            "total_questions" : len(questions_query),
+            "current_category" : "",
+            "categories" : cat_result
+            }
+            return jsonify(result)
+        else:
+            abort(404)
 
     '''
     Delete a Question
@@ -137,21 +140,23 @@ def create_app(test_config=None):
         start_page = (page - 1) * QUESTIONS_PER_PAGE
         end_page = start_page + QUESTIONS_PER_PAGE
         ques_result = []
-        questions_query = Question.query.filter(Question.category == str(id)).all()
-        formatted_questions = [question_query.format() for question_query in questions_query]
-        categories_query_all = Category.query.all()
-        categories_query_selected = Category.query.filter(Category.id == id).first()
-        cat_result = {}
-        for category_query in categories_query_all:
-            cat_result[category_query.id] = category_query.type
-        result = {
-        "questions" : formatted_questions[start_page:end_page],
-        "total_questions" : len(questions_query),
-        "current_category" : categories_query_selected.type,
-        "categories" : cat_result
-        }
-        return jsonify(result)
-
+        try:
+            questions_query = Question.query.filter(Question.category == str(id)).all()
+            formatted_questions = [question_query.format() for question_query in questions_query]
+            categories_query_all = Category.query.all()
+            categories_query_selected = Category.query.filter(Category.id == id).first()
+            cat_result = {}
+            for category_query in categories_query_all:
+                cat_result[category_query.id] = category_query.type
+            result = {
+            "questions" : formatted_questions[start_page:end_page],
+            "total_questions" : len(questions_query),
+            "current_category" : categories_query_selected.type,
+            "categories" : cat_result
+            }
+            return jsonify(result)
+        except:
+            abort(404)
     '''
     Get a Question for Quiz
     '''
@@ -160,7 +165,12 @@ def create_app(test_config=None):
         request_quiz = request.get_json()
         prev_ques_ind = request_quiz["previous_questions"]
         quiz_cat = request_quiz["quiz_category"]["id"]
+
         if quiz_cat != 0:
+            categories_query_all = Category.query.filter(Category.id == quiz_cat).all()
+            if categories_query_all == []:
+                abort(404)
+
             questions_query = Question.query.filter(Question.category == str(quiz_cat)).all()
         else:
             questions_query = Question.query.all()
