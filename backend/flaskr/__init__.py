@@ -52,11 +52,13 @@ def create_app(test_config=None):
     '''
     @app.route("/questions")
     def get_pag_questions():
+        items_limit = request.args.get('limit', QUESTIONS_PER_PAGE, type=int)
         page = request.args.get("pages", 1, type=int)
-        start_page = (page - 1) * QUESTIONS_PER_PAGE
-        end_page = start_page + QUESTIONS_PER_PAGE
+        current_index = page - 1
         ques_result = []
-        questions_query = Question.query.all()
+        questions_query = Question.query.order_by(
+                Question.id
+            ).limit(items_limit).offset(current_index * items_limit).all()
         formatted_questions = [
             question_query.format() for question_query in questions_query
             ]
@@ -66,7 +68,7 @@ def create_app(test_config=None):
             cat_result[category_query.id] = category_query.type
         if len(formatted_questions[start_page:end_page]) != 0:
             result = {
-                "questions": formatted_questions[start_page:end_page],
+                "questions": formatted_questions,
                 "total_questions": len(questions_query),
                 "current_category": "",
                 "categories": cat_result
@@ -154,14 +156,16 @@ def create_app(test_config=None):
     '''
     @app.route("/categories/<int:id>/questions")
     def get_cat_questions(id):
+        items_limit = request.args.get('limit', QUESTIONS_PER_PAGE, type=int)
         page = request.args.get("pages", 1, type=int)
-        start_page = (page - 1) * QUESTIONS_PER_PAGE
-        end_page = start_page + QUESTIONS_PER_PAGE
+        current_index = page - 1
         ques_result = []
         try:
             questions_query = Question.query.filter(
                 Question.category == str(id)
-                ).all()
+                ).order_by(
+                    Question.id
+                ).limit(items_limit).offset(current_index * items_limit).all()
             formatted_questions = [
                 question_query.format() for question_query in questions_query
                 ]
